@@ -1,0 +1,195 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class RouletteController : PopupBase
+{
+    // 초당 회전 값 ?
+    [SerializeField] Transform mSpinPlateTrans;
+    [HideInInspector] float rollSpeed = 60f;
+    [HideInInspector] public float rollFriction = 0.9678f;
+    bool rollSpin = false;
+    float distanceTime = 0f;
+    int selectIdx = -1;
+    [SerializeField] GameObject[] SlotItem;
+    [SerializeField] GameObject[] LightOnObj;
+    [SerializeField] GameObject[] LightOffObj;
+
+    public override void ShowPopup()
+    {
+        base.ShowPopup();
+        ResetRoulette();
+    }
+
+    public override void HidePopup()
+    {
+        if (UIManager.Instance.spinNow)
+            return;
+
+        base.HidePopup();
+    }
+
+    private void ResetRoulette()
+    {
+        rollSpin = false;
+        UIManager.Instance.spinNow = false;
+        StopCoroutine("Co_StartAction");
+        StopCoroutine("Co_RollSpinPlate");
+        StopCoroutine("Co_EndAction");
+
+        for (int i = 0; i < LightOnObj.Length; i++)
+        {
+            LightOnObj[i].SetActive(false);
+        }
+
+        for (int i = 0; i < SlotItem.Length; i++)
+        {
+            SlotItem[i].GetComponent<TweenScale>().enabled = false;
+            SlotItem[i].GetComponent<TweenScale>().ResetToBeginning();
+            SlotItem[i].transform.localScale = Vector3.one;
+        }
+
+        mSpinPlateTrans.rotation = Quaternion.Euler(0,0,0);
+        rollSpeed = 60f;
+        distanceTime = 0;
+        rollFriction = 0.9678f;
+        selectIdx = -1;
+    }
+    
+    public void StartSpin()
+    {
+        if (rollSpin || UIManager.Instance.spinNow)
+            return;
+
+        ResetRoulette();
+
+        rollSpin = true;
+        UIManager.Instance.spinNow = true;
+        CalcRewardItem();
+        StartCoroutine("Co_StartAction");
+    }
+
+    IEnumerator Co_RollSpinPlate()
+    {
+        while(rollSpeed >= 0.09f)
+        {
+            distanceTime += Time.deltaTime;
+            rollSpeed *= rollFriction;
+            mSpinPlateTrans.Rotate(0,0,rollSpeed);
+            yield return null;
+        }
+        yield return null;
+        StartCoroutine("Co_EndAction");
+    }
+    
+    public void CalcRewardItem()
+    {
+        int randomPercentage = Random.Range(0,1000);
+
+        // 7%
+        if (randomPercentage < 70)
+        {
+            selectIdx = 0;
+        }
+        // 8%
+        else if (randomPercentage >= 70 && randomPercentage < 150)
+        {
+            selectIdx = 1;
+        }
+        // 9%
+        else if (randomPercentage >= 150 && randomPercentage < 240)
+        {
+            selectIdx = 2;
+        }
+        // 10%
+        else if (randomPercentage >= 240 && randomPercentage < 340)
+        {
+            selectIdx =3;
+        }
+        // 10%
+        else if (randomPercentage >= 340 && randomPercentage < 440)
+        {
+            selectIdx = 4;
+        }
+        // 9%
+        else if (randomPercentage >= 440 && randomPercentage < 530)
+        {
+            selectIdx = 5;
+        }
+        // 6%
+        else if (randomPercentage >= 530 && randomPercentage < 590)
+        {
+            selectIdx = 6;
+        }
+        // 9%
+        else if (randomPercentage >= 590 && randomPercentage < 680)
+        {
+            selectIdx = 7;
+        }
+        // 12%
+        else if (randomPercentage >= 680 && randomPercentage < 800)
+        {
+            selectIdx = 8;
+        }
+        // 7%
+        else if (randomPercentage >= 800 && randomPercentage < 870)
+        {
+            selectIdx = 9;
+        }
+        // 5%
+        else if(randomPercentage >= 870 && randomPercentage < 920)
+        {
+            selectIdx = 10;
+        }
+        // 8%
+        else if (randomPercentage >= 920 && randomPercentage < 1000)
+        {
+            selectIdx = 11;
+        }
+        Debug.Log(randomPercentage);
+        Debug.Log("당첨번호 : " + selectIdx);
+        rollSpeed = (60 + selectIdx);
+    }
+
+
+    IEnumerator Co_StartAction()
+    {
+        float activeTime = 1;
+        int idx = LightOnObj.Length-1;
+
+        while(idx >= 0)
+        {
+            LightOnObj[idx--].SetActive(true);
+
+            activeTime -= Time.deltaTime;
+
+            yield return new WaitForSeconds(0.015f);
+        }
+        yield return null;
+        //Debug.Log(activeTime);
+        //Debug.Log(idx);
+        StartCoroutine("Co_RollSpinPlate");
+    }
+
+    IEnumerator Co_EndAction()
+    {
+        float activeTime = 1;
+        int idx = LightOnObj.Length - 1;
+
+        while (idx >= 0)
+        {
+            LightOnObj[idx--].SetActive(false);
+
+            activeTime -= Time.deltaTime;
+
+            yield return new WaitForSeconds(0.015f);
+        }
+
+        SlotItem[selectIdx].GetComponent<TweenScale>().PlayForward();
+       // Debug.Log(distanceTime);
+        //Debug.Log(mSpinPlateTrans.rotation);
+        //Debug.Log(mSpinPlateTrans.localEulerAngles);
+        rollSpin = false;
+        UIManager.Instance.spinNow = false;
+    }
+}
